@@ -1,5 +1,7 @@
 # No idea files for now. There's private info in some of those files.
 /.idea/
+# Build dir
+/dist/
 
 
 # Created by .ignore support plugin (hsz.mobi)

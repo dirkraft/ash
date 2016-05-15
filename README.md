@@ -3,5 +3,10 @@ ash
 
 ash is an AWS EC2 ssh tool.
 
-TODO show examples
+
+### Examples ###
+
+SSH to an instance in an auto-scaling group
+
+    ash -g prod/webapp1
 

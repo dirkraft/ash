@@ -25,10 +25,20 @@ func findEc2(params *ec2.DescribeInstancesInput) (*ec2.Instance, error) {
   return ec2, nil
 }
 
-func resolveHost(instanceId, group, tag string) (string, *ec2.Instance, error) {
+func resolveHost(at, host, instanceId, group, tag string) (string, *ec2.Instance, error) {
+
+  if at != "" {
+    fmt.Println("Using explicitly given EC2 host in user@host arg:", at)
+    return strings.Split(at, "@")[1], nil, nil
+  }
+
+  if host != "" {
+    fmt.Println("Using explicitly given EC2 host:", host)
+    return host, nil, nil
+  }
 
   if instanceId != "" {
-    fmt.Println("Finding EC2 by instance id: %s", instanceId)
+    fmt.Println("Finding EC2 by instance id:", instanceId)
     ec2, err := findEc2(&ec2.DescribeInstancesInput{
       InstanceIds: []*string{aws.String(instanceId)},
     })
@@ -36,7 +46,7 @@ func resolveHost(instanceId, group, tag string) (string, *ec2.Instance, error) {
   }
 
   if group != "" {
-    fmt.Println("Finding EC2 by auto-scaling group: %s", group)
+    fmt.Println("Finding EC2 by auto-scaling group:", group)
     ec2, err := findEc2(&ec2.DescribeInstancesInput{
       Filters: []*ec2.Filter{
         {Name: aws.String("instance-state-name"), Values: []*string{aws.String("running")}},
@@ -47,7 +57,7 @@ func resolveHost(instanceId, group, tag string) (string, *ec2.Instance, error) {
   }
 
   if tag != "" {
-    fmt.Println("Finding EC2 by tag: %s", tag)
+    fmt.Println("Finding EC2 by tag:", tag)
     tagParts := strings.Split(tag, "=")
     ec2, err := findEc2(&ec2.DescribeInstancesInput{
       Filters: []*ec2.Filter{
@@ -63,7 +73,7 @@ func resolveHost(instanceId, group, tag string) (string, *ec2.Instance, error) {
 
 func resolveUser(user string, ec2 *ec2.Instance) (string, error) {
   if user != "" {
-    fmt.Println("Authenticating as given user: %s", user)
+    fmt.Println("Authenticating as given user:", user)
     return user, nil
   }
   // TODO guess user based on AMI: debian>admin, ubuntu>ubuntu, amzn>ec2-user
@@ -121,17 +131,17 @@ func Run() {
     parts := make([]string, 0, 20)
 
     args := c.Args()
-    //at := ""
-    //for i, arg := range args {
-    //  if strings.Contains(arg, "@") {
-    //    at = arg
-    //    // Cut it out
-    //    args = append(args[:i], args[i + 1:]...)
-    //    break
-    //  }
-    //}
+    at := ""
+    for i, arg := range args {
+      if strings.Contains(arg, "@") {
+        at = arg
+        // Cut it out
+        args = append(args[:i], args[i + 1:]...)
+        break
+      }
+    }
 
-    host, ec2, err := resolveHost(c.String("instance"), c.String("group"), c.String("tag"))
+    host, ec2, err := resolveHost(at, c.String("host"), c.String("instance"), c.String("group"), c.String("tag"))
     if err != nil {
       return err
     }
@@ -155,8 +165,8 @@ func Run() {
       parts = append(parts, host)
     }
 
-    fmt.Printf("Command: %s\n", parts)
-    fmt.Printf("Remaining: %s\n", args)
+    fmt.Println("Command:", parts)
+    fmt.Println("Remaining:", args)
 
     cmd := exec.Command("ssh", parts...)
     cmd.Stdout = os.Stdout
@@ -167,6 +177,6 @@ func Run() {
 
   err := app.Run(os.Args)
   if err != nil {
-    fmt.Printf("Error: %s\n", err)
+    fmt.Println("Error:", err)
   }
 }
