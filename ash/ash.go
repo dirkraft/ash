@@ -4,7 +4,6 @@ import (
   "github.com/codegangsta/cli"
   "os"
   "os/exec"
-  "fmt"
   "strings"
   "github.com/aws/aws-sdk-go/service/ec2"
   "github.com/aws/aws-sdk-go/aws/session"
@@ -20,7 +19,7 @@ func findEc2(params *ec2.DescribeInstancesInput) (*ec2.Instance, error) {
     return nil, err
   }
   ec2 := resp.Reservations[0].Instances[0]
-  fmt.Printf("Located EC2: id %s, pub %s, priv %s, launch %s\n",
+  rem("Located EC2: id %s, pub %s, priv %s, launch %s",
     *ec2.InstanceId, *ec2.PublicIpAddress, *ec2.PrivateIpAddress, *ec2.LaunchTime)
   return ec2, nil
 }
@@ -28,17 +27,17 @@ func findEc2(params *ec2.DescribeInstancesInput) (*ec2.Instance, error) {
 func resolveHost(at, host, instanceId, group, tag string) (string, *ec2.Instance, error) {
 
   if at != "" {
-    fmt.Println("Using explicitly given EC2 host in user@host arg:", at)
+    rem("Using explicitly given EC2 host in user@host arg: %s", at)
     return strings.Split(at, "@")[1], nil, nil
   }
 
   if host != "" {
-    fmt.Println("Using explicitly given EC2 host:", host)
+    rem("Using explicitly given EC2 host: %s", host)
     return host, nil, nil
   }
 
   if instanceId != "" {
-    fmt.Println("Finding EC2 by instance id:", instanceId)
+    rem("Finding EC2 by instance id: %s", instanceId)
     ec2, err := findEc2(&ec2.DescribeInstancesInput{
       InstanceIds: []*string{aws.String(instanceId)},
     })
@@ -46,7 +45,7 @@ func resolveHost(at, host, instanceId, group, tag string) (string, *ec2.Instance
   }
 
   if group != "" {
-    fmt.Println("Finding EC2 by auto-scaling group:", group)
+    rem("Finding EC2 by auto-scaling group: %s", group)
     ec2, err := findEc2(&ec2.DescribeInstancesInput{
       Filters: []*ec2.Filter{
         {Name: aws.String("instance-state-name"), Values: []*string{aws.String("running")}},
@@ -57,7 +56,7 @@ func resolveHost(at, host, instanceId, group, tag string) (string, *ec2.Instance
   }
 
   if tag != "" {
-    fmt.Println("Finding EC2 by tag:", tag)
+    rem("Finding EC2 by tag: %s", tag)
     tagParts := strings.Split(tag, "=")
     ec2, err := findEc2(&ec2.DescribeInstancesInput{
       Filters: []*ec2.Filter{
@@ -73,7 +72,7 @@ func resolveHost(at, host, instanceId, group, tag string) (string, *ec2.Instance
 
 func resolveUser(user string, ec2 *ec2.Instance) (string, error) {
   if user != "" {
-    fmt.Println("Authenticating as given user:", user)
+    rem("Authenticating as given user: %s", user)
     return user, nil
   }
   // TODO guess user based on AMI: debian>admin, ubuntu>ubuntu, amzn>ec2-user
@@ -102,33 +101,49 @@ func Run() {
     cli.StringFlag{
       Name: "host, h",
       Value: "",
+      Usage: "ssh to instance by hostname",
     },
     cli.StringFlag{
       Name: "instance, machine, m",
       Value: "",
+      Usage: "ssh to instance by EC2 instance id",
     },
     cli.StringFlag{
       Name: "group, g",
       Value: "",
+      Usage: "ssh to instance(s) by auto-scaling group name",
     },
     cli.StringFlag{
       Name: "tag, t",
       Value: "",
+      Usage: "ssh to instance(s) by EC2 tag",
     },
     cli.StringFlag{
       Name: "user, u",
       Value: "",
+      Usage: "ssh to instance(s) as this username",
     },
     cli.StringFlag{
       Name: "identity, i",
       Value: "",
+      Usage: "ssh to instance(s) identified by this private key file",
     },
     cli.BoolFlag{
       Name: "kms, k",
+      Usage: "ssh to instance(s) identified by a private key from KMS",
+    },
+    cli.BoolFlag{
+      Name: "Agent, A",
+      Usage: "ssh to instance(s) identified by any private key in ~/.ssh/{id_rsa,*.pem} via ssh-agent",
     },
   }
   app.Action = func(c *cli.Context) error {
-    parts := make([]string, 0, 20)
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Build the ssh command
+
+    sshParts := make([]string, 1, 30)
+    sshParts[0] = "ssh"
 
     args := c.Args()
     at := ""
@@ -156,19 +171,39 @@ func Run() {
       return err
     }
     if ident != "" {
-      parts = append(parts, "-i", ident)
+      sshParts = append(sshParts, "-i", ident)
     }
 
     if user != "" {
-      parts = append(parts, user + "@" + host)
+      sshParts = append(sshParts, user + "@" + host)
     } else if host != "" {
-      parts = append(parts, host)
+      sshParts = append(sshParts, host)
     }
 
-    fmt.Println("Command:", parts)
-    fmt.Println("Remaining:", args)
+    rem("SSH command: %s", sshParts)
+    rem("Remaining args: %s", args)
 
-    cmd := exec.Command("ssh", parts...)
+    sshCmd := strings.Join(sshParts, " ") + " " + strings.Join(args, " ")
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Build the script
+
+    scriptLines := make([]string, 1, 10)
+
+    if c.Bool("Agent") {
+      scriptLines = append(scriptLines, "eval $(ssh-agent) >> /dev/null", "ssh-add ~/.ssh/{id_rsa,*.pem} 2> /dev/null")
+    }
+
+    scriptLines = append(scriptLines, sshCmd)
+
+    if c.Bool("Agent") {
+      scriptLines = append(scriptLines, "kill $SSH_AGENT_PID")
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Execution
+
+    cmd := exec.Command("bash", "-c", strings.Join(scriptLines, "\n"))
     cmd.Stdout = os.Stdout
     cmd.Stderr = os.Stderr
     cmd.Stdin = os.Stdin
@@ -177,6 +212,6 @@ func Run() {
 
   err := app.Run(os.Args)
   if err != nil {
-    fmt.Println("Error:", err)
+    rem("Error: %s", err)
   }
 }
