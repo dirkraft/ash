@@ -36,3 +36,25 @@ in ~/.ssh/devkey.pem using a shortcut
     ash -m i-12345678 -i devkey
 
 Other options to come.
+
+
+
+### Development ###
+
+Get any dependencies.
+
+    go get 
+
+To run commands in development, just replace `ash` with `go run main.go` 
+
+    go run main.go ash_args...
+
+To build binaries for all targeted platforms
+
+    make clean all
+
+For me to publish new dev releases to
+https://github.com/dirkraft/ash/releases/tag/dev
+
+    export GITHUB_TOKEN
+    make clean publish-dev
