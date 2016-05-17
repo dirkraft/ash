@@ -26,12 +26,13 @@ as **-u**ser `ubuntu` using all available keys matching
 
     ash -g prod/webapp1 -u ubuntu -A
 
-or by some arbitrary **-t**ag 
+or by some arbitrary **-t**ag, **-i**dentified by some private key
 
-    ash -t appName=jenkins
+    ash -t appName=jenkins -i ~/.ssh/devkey.pem
     
-or by EC2 **-m**achine's instance id
+or by EC2 **-m**achine's instance id, **-i**dentified by a private key
+in ~/.ssh/devkey.pem using a shortcut
 
-    ash -m i-12345678
+    ash -m i-12345678 -i devkey
 
 Other options to come.
