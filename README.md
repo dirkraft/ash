@@ -3,8 +3,18 @@ ash
 
 ash is an AWS EC2 ssh tool focused on convenience.
 
+This is a work in progress, but the intention is that the options
+illustrated by the examples below are implemented.
+
+
 
 ### Get It ###
+
+Dev builds: https://github.com/dirkraft/ash/releases/tag/dev
+
+Only a few platforms are covered right now but I can add more supported
+build targets. I need to know which GOOS+GOARCH:
+https://golang.org/doc/install/source#environment
 
 
 
