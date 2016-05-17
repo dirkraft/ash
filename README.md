@@ -28,7 +28,7 @@ as **-u**ser `ubuntu` using all available keys matching
 
 or by some arbitrary **-t**ag, **-i**dentified by some private key
 
-    ash -t appName=jenkins -i ~/.ssh/devkey.pem
+    ash -t Name=jenkins -i ~/.ssh/devkey.pem
     
 or by EC2 **-m**achine's instance id, **-i**dentified by a private key
 in ~/.ssh/devkey.pem using a shortcut
