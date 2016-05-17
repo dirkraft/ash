@@ -9,6 +9,7 @@ import (
   "github.com/aws/aws-sdk-go/aws/session"
   "github.com/aws/aws-sdk-go/aws"
   "errors"
+  "path/filepath"
 )
 
 var ec2Svc = ec2.New(session.New(), &aws.Config{Region:aws.String("us-east-1")})
@@ -81,13 +82,47 @@ func resolveUser(user string, ec2 *ec2.Instance) (string, error) {
 
 func resolveIdent(identity string, useKms bool, ec2 *ec2.Instance) (string, error) {
   if identity != "" {
-    // TODO resolve to identity file
-    return "", nil
+    // Is it a valid path already?
+    _, err := os.Stat(identity)
+    if err == nil {
+      rem("Identifying by given file: %s", identity)
+      return identity, nil
+    }
+    if !os.IsNotExist(err) {
+      // If some error other than not existing...
+      return "", err
+    }
+    // Otherwise we're going to look some more.
+
+    // Is it the name of a private key in ~/.ssh/ ?
+    expandedPath := filepath.Join(os.Getenv("HOME"), ".ssh", identity)
+    _, err = os.Stat(expandedPath)
+    if err == nil {
+      rem("Identifying by file: %s", expandedPath)
+      return expandedPath, nil
+    }
+    if !os.IsNotExist(err) {
+      // If some error other than not existing...
+      return "", err
+    }
+    // Otherwise we're going to look some more.
+
+    // Is it the name of a private key in ~/.ssh/ without the pem suffix.
+    expandedPath += ".pem"
+    _, err = os.Stat(expandedPath)
+    if err == nil {
+      rem("Identifying by file: %s", expandedPath)
+      return expandedPath, nil
+    }
+
+    return "", errors.New("Failed to resolve given identity: " + identity)
   }
+
   if useKms {
     // TODO read key of ec2 instance from kms
     return "", nil
   }
+
   // TODO find key of ec2 instance locally in ~/.ssh/
   return "", nil
 }
@@ -156,6 +191,7 @@ func Run() {
       }
     }
 
+    // Resolve hosts first. We may need EC2 information for resolution of other ssh parts.
     host, ec2, err := resolveHost(at, c.String("host"), c.String("instance"), c.String("group"), c.String("tag"))
     if err != nil {
       return err
@@ -181,7 +217,7 @@ func Run() {
     }
 
     rem("SSH command: %s", sshParts)
-    rem("Remaining args: %s", args)
+    rem("Remote command: %s", args)
 
     sshCmd := strings.Join(sshParts, " ") + " " + strings.Join(args, " ")
 
