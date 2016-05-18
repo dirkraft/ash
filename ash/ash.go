@@ -36,17 +36,19 @@ func resolveHost(at, host, instanceId, group, tag string) (string, *ec2.Instance
       rem("Using explicitly given EC2 host: %s", host)
     }
 
-    // Is it already an ip address?
+    dbg("Is it already an ip address? %s", host)
     ipAddr := net.ParseIP(host)
     if ipAddr == nil {
-      // Turn it into ip for public ip address EC2 filter.
+      dbg("Turn it into ip for public ip address EC2 filter.")
       ipAddrs, err := net.LookupIP(host)
-      if err != nil {
+      if err == nil {
         ipAddr = ipAddrs[0]
+      } else {
+        dbg("It's an alias. Not much else we can do.")
       }
-      // If it's an alias, not much else we can do.
     }
 
+    dbg("Finding EC2 instance by ip-address=%s", ipAddr)
     ec2, err := findEc2(&ec2.DescribeInstancesInput{
       Filters: []*ec2.Filter{
         {Name: aws.String("instance-state-name"), Values: []*string{aws.String("running")}},
@@ -90,11 +92,19 @@ func resolveHost(at, host, instanceId, group, tag string) (string, *ec2.Instance
   return "", nil, errors.New("Unable locate suitable EC2 instance.")
 }
 
-func resolveUser(user string, ec2 *ec2.Instance) (string, error) {
+func resolveUser(at, user string, ec2 *ec2.Instance) (string, error) {
+
+  if at != "" {
+    user = strings.Split(at, "@")[0]
+    rem("Authenticating as given user in user@host arg: %s", at)
+    return user, nil
+  }
+
   if user != "" {
     rem("Authenticating as given user: %s", user)
     return user, nil
   }
+  
   // TODO guess user based on AMI: debian>admin, ubuntu>ubuntu, amzn>ec2-user
   return "", nil
 }
@@ -214,17 +224,19 @@ func Run() {
       return errors.New("To whom do I connect? Specific one of: user@host, --host, --instance, --group, --tag")
     }
 
-    // Resolve hosts first. We may need EC2 information for resolution of other ssh parts.
+    dbg("Resolving hosts first. We may need EC2 information for resolution of other ssh parts.")
     host, ec2, err := resolveHost(at, c.String("host"), c.String("instance"), c.String("group"), c.String("tag"))
     if err != nil {
       return err
     }
 
-    user, err := resolveUser(c.String("user"), ec2)
+    dbg("Resolving user.")
+    user, err := resolveUser(at, c.String("user"), ec2)
     if err != nil {
       return err
     }
 
+    dbg("Resolving identity.")
     ident, err := resolveIdent(c.String("identity"), c.Bool("kms"), ec2)
     if err != nil {
       return err

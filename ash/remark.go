@@ -8,6 +8,10 @@ import (
 
 var serr = log.New(os.Stderr, "", 0)
 
+func dbg(format string, args ...interface{}) {
+  serr.Println(color.BlueString("[DBG] " + format, args...))
+}
+
 func rem(format string, args ...interface{}) {
-  serr.Println(color.YellowString(format, args...))
+  serr.Println(color.YellowString("[INF] " + format, args...))
 }
