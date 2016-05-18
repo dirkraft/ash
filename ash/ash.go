@@ -8,9 +8,9 @@ import (
   "github.com/aws/aws-sdk-go/service/ec2"
   "github.com/aws/aws-sdk-go/aws/session"
   "github.com/aws/aws-sdk-go/aws"
-  "github.com/go-errors/errors"
   "path/filepath"
   "net"
+  "errors"
 )
 
 var ec2Svc = ec2.New(session.New(), &aws.Config{Region:aws.String("us-east-1")})
@@ -270,12 +270,11 @@ func Run() {
     cmd.Stderr = os.Stderr
     cmd.Stdin = os.Stdin
     return cmd.Run()
+    return err
   }
 
   err := app.Run(os.Args)
   if err != nil {
     rem("Error: %s", err)
-    // TODO with verbose only
-    rem(err.(*errors.Error).ErrorStack())
   }
 }
