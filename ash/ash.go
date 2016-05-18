@@ -8,8 +8,9 @@ import (
   "github.com/aws/aws-sdk-go/service/ec2"
   "github.com/aws/aws-sdk-go/aws/session"
   "github.com/aws/aws-sdk-go/aws"
-  "errors"
+  "github.com/go-errors/errors"
   "path/filepath"
+  "net"
 )
 
 var ec2Svc = ec2.New(session.New(), &aws.Config{Region:aws.String("us-east-1")})
@@ -27,14 +28,32 @@ func findEc2(params *ec2.DescribeInstancesInput) (*ec2.Instance, error) {
 
 func resolveHost(at, host, instanceId, group, tag string) (string, *ec2.Instance, error) {
 
-  if at != "" {
-    rem("Using explicitly given EC2 host in user@host arg: %s", at)
-    return strings.Split(at, "@")[1], nil, nil
-  }
+  if at != "" || host != "" {
+    if at != "" {
+      rem("Using explicitly given EC2 host in user@host arg: %s", at)
+      host = strings.Split(at, "@")[1]
+    } else {
+      rem("Using explicitly given EC2 host: %s", host)
+    }
 
-  if host != "" {
-    rem("Using explicitly given EC2 host: %s", host)
-    return host, nil, nil
+    // Is it already an ip address?
+    ipAddr := net.ParseIP(host)
+    if ipAddr == nil {
+      // Turn it into ip for public ip address EC2 filter.
+      ipAddrs, err := net.LookupIP(host)
+      if err != nil {
+        ipAddr = ipAddrs[0]
+      }
+      // If it's an alias, not much else we can do.
+    }
+
+    ec2, err := findEc2(&ec2.DescribeInstancesInput{
+      Filters: []*ec2.Filter{
+        {Name: aws.String("instance-state-name"), Values: []*string{aws.String("running")}},
+        {Name: aws.String("ip-address"), Values: []*string{aws.String(ipAddr.String())}},
+      },
+    })
+    return host, ec2, err
   }
 
   if instanceId != "" {
@@ -191,6 +210,10 @@ func Run() {
       }
     }
 
+    if !(at != "" || c.IsSet("host") || c.IsSet("instance") || c.IsSet("group") || c.IsSet("tag")) {
+      return errors.New("To whom do I connect? Specific one of: user@host, --host, --instance, --group, --tag")
+    }
+
     // Resolve hosts first. We may need EC2 information for resolution of other ssh parts.
     host, ec2, err := resolveHost(at, c.String("host"), c.String("instance"), c.String("group"), c.String("tag"))
     if err != nil {
@@ -217,6 +240,9 @@ func Run() {
     }
 
     rem("SSH command: %s", sshParts)
+    if c.Bool("Agent") {
+      rem("  with ssh-agent")
+    }
     rem("Remote command: %s", args)
 
     sshCmd := strings.Join(sshParts, " ") + " " + strings.Join(args, " ")
@@ -249,5 +275,7 @@ func Run() {
   err := app.Run(os.Args)
   if err != nil {
     rem("Error: %s", err)
+    // TODO with verbose only
+    rem(err.(*errors.Error).ErrorStack())
   }
 }
