@@ -10,8 +10,13 @@ import (
 )
 
 func cliRun(c *cli.Context) error {
-  if (c.IsSet("version")) {
+  if c.IsSet("version") {
     fmt.Println(c.App.Version)
+    return nil
+  }
+
+  if c.IsSet("help") {
+    cli.ShowAppHelp(c)
     return nil
   }
 
@@ -35,7 +40,7 @@ func cliRun(c *cli.Context) error {
   }
 
   if !(at != "" || c.IsSet("host") || c.IsSet("instance") || c.IsSet("group") || c.IsSet("tag")) {
-    return errors.New("To whom do I connect? Specific one of: user@host, --host, --instance, --group, --tag")
+    return errors.New("To whom do I connect? Specify one of: user@host, --host/-h, --instance/-m, --group/-g, --tag/-t")
   }
 
   dbgf("Resolving ssh_config. Some inferences are sensitive to ssh_config.")
@@ -183,9 +188,15 @@ func Run() {
       Value: 2,
       Usage: "ash verbosity: 0 - TRACE, 1 - DEBUG, 2 - INFO (default level), 3 - WARN, 4 - ERROR)",
     },
-    // Re-instate version flag
+    // Re-instate long version flag.
     cli.BoolFlag{
       Name: "version",
+      Usage: "print the version",
+    },
+    // Re-instate long help flag.
+    cli.BoolFlag {
+      Name: "help",
+      Usage: "show help",
     },
   }
   app.Action = cliRun
