@@ -14,6 +14,11 @@ illustrated by the examples below are implemented.
 
 Dev builds: https://github.com/dirkraft/ash/releases/tag/dev
 
+For OSX, that might look like this:
+
+    curl -o /usr/local/bin/ash -L https://github.com/dirkraft/ash/releases/download/dev/ash.darwin.amd64
+    chmod +x /usr/local/bin/ash
+
 Only a few platforms are covered right now but I can add more supported
 build targets. I need to know which GOOS+GOARCH:
 https://golang.org/doc/install/source#environment
