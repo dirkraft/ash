@@ -26,16 +26,37 @@ as **-u**ser `ubuntu` using all available keys matching
 
     ash -g prod/webapp1 -u ubuntu -A
 
-or by some arbitrary **-t**ag, **-i**dentified by some private key
+SSH by some arbitrary **-t**ag, **-i**dentified by some private key.
+No user has been explicitly given, so it will be guessed based on
+the EC2 instance's AMI, unless the user's ssh_config defines a specific
+user to connect with.
 
     ash -t Name=jenkins -i ~/.ssh/devkey.pem
     
-or by EC2 **-m**achine's instance id, **-i**dentified by a private key
-in ~/.ssh/devkey.pem using a shortcut
+SSH by EC2 **-m**achine's instance id, **-i**dentified by a private key
+in ~/.ssh/devkey.pem using a shortcut. 
 
     ash -m i-12345678 -i devkey
 
 Other options to come.
+
+
+
+### SSH Config ###
+
+ash combined with ssh config settings can make for an optimally
+convenient EC2 SSH experience. Say you use the same master key for
+all EC2 instances. In your `~/.ssh/config` this will use that
+IdentityFile for all EC2 connections, unless you specify one explicitly
+with the `-i/--identity` option.
+
+    Host ec2-*.compute-1.amazonaws.com
+        IdentityFile path/to/privatekey.pem
+
+Ash uses DNS names instead of IP addresses which enables ssh config host
+pattern options such as this. SSH config is preferred over *inferenced
+parameters* (like guessing the user based on AMI) whenever the local
+ssh config has relevant configuration. 
 
 
 
