@@ -73,7 +73,7 @@ Get any dependencies via a make target.
 
     make develop
 
-To run commands in development, just replace `ash` with `go run main.go` 
+To run commands in development, replace `ash` with `go run ...`, e.g. 
 
     go run ash/main.go ash_args...
 
