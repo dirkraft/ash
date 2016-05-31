@@ -69,9 +69,9 @@ ssh config has relevant configuration.
 
 ### Development ###
 
-Get any dependencies.
+Get any dependencies via a make target.
 
-    go get 
+    make develop
 
 To run commands in development, just replace `ash` with `go run main.go` 
 

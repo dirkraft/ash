@@ -1,4 +1,7 @@
-.PHONY: build all publish-dev clean
+.PHONY: develop build all publish-dev clean
+
+develop:
+	go get ./ash ./acp
 
 build:
 	mkdir -p dist/
