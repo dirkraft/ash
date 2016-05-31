@@ -4,5 +4,4 @@ go:
   - 1.6.2
 
 install:
-  - go get
-  - make clean all
+  - make clean develop all
