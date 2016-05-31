@@ -6,6 +6,8 @@ ash is an AWS EC2 ssh tool focused on convenience.
 This is a work in progress, but the intention is that the options
 illustrated by the examples below are implemented.
 
+![](https://travis-ci.org/dirkraft/ash.svg?branch=master)
+
 
 
 ### Get It ###
