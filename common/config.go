@@ -1,4 +1,4 @@
-package ash
+package common
 
 func Get(key string) string {
   //os.Getenv("HOME") + os.PathSeparator

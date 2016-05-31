@@ -1,4 +1,4 @@
-package ash
+package common
 
 import (
   "github.com/aws/aws-sdk-go/aws"

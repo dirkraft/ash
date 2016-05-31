@@ -70,7 +70,7 @@ Get any dependencies.
 
 To run commands in development, just replace `ash` with `go run main.go` 
 
-    go run ash.go ash_args...
+    go run ash/main.go ash_args...
 
 To build binaries for all targeted platforms
 
