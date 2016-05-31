@@ -21,34 +21,45 @@ func findEc2(params *ec2.DescribeInstancesInput) (*ec2.Instance, error) {
     return nil, err
   }
   ec2 := resp.Reservations[0].Instances[0]
-  rem("Located EC2: id %s, pub %s, priv %s, launch %s",
+  inff("Located EC2: id %s, pub %s, priv %s, launch %s",
     *ec2.InstanceId, *ec2.PublicIpAddress, *ec2.PrivateIpAddress, *ec2.LaunchTime)
   return ec2, nil
+}
+
+func findAmi(params *ec2.DescribeImagesInput) (*ec2.Image, error) {
+  resp, err := ec2Svc.DescribeImages(params)
+  if err != nil {
+    return nil, err
+  }
+
+  ami := resp.Images[0]
+  inff("Located AMI: id %s, name %s", *ami.ImageId, *ami.Name)
+  return ami, nil
 }
 
 func resolveHost(at, host, instanceId, group, tag string) (string, *ec2.Instance, error) {
 
   if at != "" || host != "" {
     if at != "" {
-      rem("Using explicitly given EC2 host in user@host arg: %s", at)
+      inff("Using explicitly given EC2 host in user@host arg: %s", at)
       host = strings.Split(at, "@")[1]
     } else {
-      rem("Using explicitly given EC2 host: %s", host)
+      inff("Using explicitly given EC2 host: %s", host)
     }
 
-    dbg("Is it already an ip address? %s", host)
+    dbgf("Is it already an ip address? %s", host)
     ipAddr := net.ParseIP(host)
     if ipAddr == nil {
-      dbg("Turn it into ip for public ip address EC2 filter.")
+      dbgf("Turn it into ip for public ip address EC2 filter.")
       ipAddrs, err := net.LookupIP(host)
       if err == nil {
         ipAddr = ipAddrs[0]
       } else {
-        dbg("It's an alias. Not much else we can do.")
+        dbgf("It's an alias. Not much else we can do.")
       }
     }
 
-    dbg("Finding EC2 instance by ip-address=%s", ipAddr)
+    dbgf("Finding EC2 instance by ip-address=%s", ipAddr)
     ec2, err := findEc2(&ec2.DescribeInstancesInput{
       Filters: []*ec2.Filter{
         {Name: aws.String("instance-state-name"), Values: []*string{aws.String("running")}},
@@ -59,7 +70,7 @@ func resolveHost(at, host, instanceId, group, tag string) (string, *ec2.Instance
   }
 
   if instanceId != "" {
-    rem("Finding EC2 by instance id: %s", instanceId)
+    inff("Finding EC2 by instance id: %s", instanceId)
     ec2, err := findEc2(&ec2.DescribeInstancesInput{
       InstanceIds: []*string{aws.String(instanceId)},
     })
@@ -67,7 +78,7 @@ func resolveHost(at, host, instanceId, group, tag string) (string, *ec2.Instance
   }
 
   if group != "" {
-    rem("Finding EC2 by auto-scaling group: %s", group)
+    inff("Finding EC2 by auto-scaling group: %s", group)
     ec2, err := findEc2(&ec2.DescribeInstancesInput{
       Filters: []*ec2.Filter{
         {Name: aws.String("instance-state-name"), Values: []*string{aws.String("running")}},
@@ -78,7 +89,7 @@ func resolveHost(at, host, instanceId, group, tag string) (string, *ec2.Instance
   }
 
   if tag != "" {
-    rem("Finding EC2 by tag: %s", tag)
+    inff("Finding EC2 by tag: %s", tag)
     tagParts := strings.Split(tag, "=")
     ec2, err := findEc2(&ec2.DescribeInstancesInput{
       Filters: []*ec2.Filter{
@@ -92,21 +103,40 @@ func resolveHost(at, host, instanceId, group, tag string) (string, *ec2.Instance
   return "", nil, errors.New("Unable locate suitable EC2 instance.")
 }
 
-func resolveUser(at, user string, ec2 *ec2.Instance) (string, error) {
+func resolveUser(at, user string, instance *ec2.Instance) (string, error) {
 
   if at != "" {
     user = strings.Split(at, "@")[0]
-    rem("Authenticating as given user in user@host arg: %s", at)
+    inff("Authenticating as given user in user@host arg: %s", at)
     return user, nil
   }
 
   if user != "" {
-    rem("Authenticating as given user: %s", user)
+    inff("Authenticating as given user: %s", user)
     return user, nil
   }
-  
+
+  ami, err := findAmi(&ec2.DescribeImagesInput{
+    ImageIds:[]*string{aws.String(*instance.ImageId)},
+  })
+  if err != nil {
+    return "", err
+  }
+
   // TODO guess user based on AMI: debian>admin, ubuntu>ubuntu, amzn>ec2-user
-  return "", nil
+  switch {
+  case strings.HasPrefix(*ami.Name, "amzn-"):
+    user = "ec2-user"
+  case strings.HasPrefix(*ami.Name, "ubuntu/"):
+    user = "ubuntu"
+  case strings.HasPrefix(*ami.Name, "debian-"):
+    user = "admin"
+  }
+
+  if user != "" {
+    inff("Authenticating based on %s as user: %s", *ami.ImageId, "ec2-user")
+  }
+  return user, nil
 }
 
 func resolveIdent(identity string, useKms bool, ec2 *ec2.Instance) (string, error) {
@@ -114,7 +144,7 @@ func resolveIdent(identity string, useKms bool, ec2 *ec2.Instance) (string, erro
     // Is it a valid path already?
     _, err := os.Stat(identity)
     if err == nil {
-      rem("Identifying by given file: %s", identity)
+      inff("Identifying by given file: %s", identity)
       return identity, nil
     }
     if !os.IsNotExist(err) {
@@ -127,7 +157,7 @@ func resolveIdent(identity string, useKms bool, ec2 *ec2.Instance) (string, erro
     expandedPath := filepath.Join(os.Getenv("HOME"), ".ssh", identity)
     _, err = os.Stat(expandedPath)
     if err == nil {
-      rem("Identifying by file: %s", expandedPath)
+      inff("Identifying by file: %s", expandedPath)
       return expandedPath, nil
     }
     if !os.IsNotExist(err) {
@@ -136,11 +166,11 @@ func resolveIdent(identity string, useKms bool, ec2 *ec2.Instance) (string, erro
     }
     // Otherwise we're going to look some more.
 
-    // Is it the name of a private key in ~/.ssh/ without the pem suffix.
+    // Is it the name of a private key in ~/.ssh/ without the pem suffix?
     expandedPath += ".pem"
     _, err = os.Stat(expandedPath)
     if err == nil {
-      rem("Identifying by file: %s", expandedPath)
+      inff("Identifying by file: %s", expandedPath)
       return expandedPath, nil
     }
 
@@ -224,19 +254,19 @@ func Run() {
       return errors.New("To whom do I connect? Specific one of: user@host, --host, --instance, --group, --tag")
     }
 
-    dbg("Resolving hosts first. We may need EC2 information for resolution of other ssh parts.")
+    dbgf("Resolving hosts first. We may need EC2 information for resolution of other ssh parts.")
     host, ec2, err := resolveHost(at, c.String("host"), c.String("instance"), c.String("group"), c.String("tag"))
     if err != nil {
       return err
     }
 
-    dbg("Resolving user.")
+    dbgf("Resolving user.")
     user, err := resolveUser(at, c.String("user"), ec2)
     if err != nil {
       return err
     }
 
-    dbg("Resolving identity.")
+    dbgf("Resolving identity.")
     ident, err := resolveIdent(c.String("identity"), c.Bool("kms"), ec2)
     if err != nil {
       return err
@@ -251,11 +281,11 @@ func Run() {
       sshParts = append(sshParts, host)
     }
 
-    rem("SSH command: %s", sshParts)
+    inff("SSH command: %s", sshParts)
     if c.Bool("Agent") {
-      rem("  with ssh-agent")
+      inff("  with ssh-agent")
     }
-    rem("Remote command: %s", args)
+    inff("Remote command: %s", args)
 
     sshCmd := strings.Join(sshParts, " ") + " " + strings.Join(args, " ")
 
@@ -287,6 +317,6 @@ func Run() {
 
   err := app.Run(os.Args)
   if err != nil {
-    rem("Error: %s", err)
+    inff("Error: %s", err)
   }
 }
