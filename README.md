@@ -5,7 +5,9 @@ ash is an AWS EC2 ssh command-line tool focused on convenience.
 
 The intention is that the options illustrated by the examples below are implemented, but there may be some incomplete stubs here and there.
 
-![](https://travis-ci.org/dirkraft/ash.svg?branch=master)
+<a href="https://travis-ci.org/dirkraft/ash">
+<img src="https://travis-ci.org/dirkraft/ash.svg?branch=master">
+</a>
 
 
 
