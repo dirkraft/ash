@@ -126,6 +126,7 @@ func Run() {
 
   app := cli.NewApp()
   app.Name = "ash"
+  app.Version = "0.1.0"
   app.Usage = "AWS EC2 ssh tool"
   app.HideHelp = true  // Help conflicts with that of host flag. Disable it.
   app.HideVersion = true // -v conflicts with verbosity flag. Disabled it.
