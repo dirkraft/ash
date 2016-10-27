@@ -35,44 +35,51 @@ func resolveHost(at, explicitHost, instanceId, group, tag string) (string, *ec2.
     }
 
     dbgf("Finding EC2 instance by ip-address=%s", ipAddr)
-    ec2, err := findEc2(&ec2.DescribeInstancesInput{
+    ec2_, err := findEc2(&ec2.DescribeInstancesInput{
       Filters: []*ec2.Filter{
         {Name: aws.String("instance-state-name"), Values: []*string{aws.String("running")}},
         {Name: aws.String("ip-address"), Values: []*string{aws.String(ipAddr.String())}},
       },
     })
-    return explicitHost, ec2, err
+    return explicitHost, ec2_, err
   }
 
   if instanceId != "" {
     inff("Finding EC2 by instance id: %s", instanceId)
-    ec2, err := findEc2(&ec2.DescribeInstancesInput{
+    ec2_, err := findEc2(&ec2.DescribeInstancesInput{
       InstanceIds: []*string{aws.String(instanceId)},
     })
-    return *ec2.PublicDnsName, ec2, err
+    if err != nil {
+      return "", nil, err
+    }
+    if *ec2_.PublicDnsName != "" {
+      return *ec2_.PublicDnsName, ec2_, err
+    }
+    dbgf("No PublicDnsName available. Falling back to PrivateDnsName.")
+    return *ec2_.PrivateDnsName, ec2_, err
   }
 
   if group != "" {
     inff("Finding EC2 by auto-scaling group: %s", group)
-    ec2, err := findEc2(&ec2.DescribeInstancesInput{
+    ec2_, err := findEc2(&ec2.DescribeInstancesInput{
       Filters: []*ec2.Filter{
         {Name: aws.String("instance-state-name"), Values: []*string{aws.String("running")}},
         {Name: aws.String("tag:aws:autoscaling:groupName"), Values: []*string{aws.String(group)}},
       },
     })
-    return *ec2.PublicDnsName, ec2, err
+    return *ec2_.PublicDnsName, ec2_, err
   }
 
   if tag != "" {
     inff("Finding EC2 by tag: %s", tag)
     tagParts := strings.Split(tag, "=")
-    ec2, err := findEc2(&ec2.DescribeInstancesInput{
+    ec2_, err := findEc2(&ec2.DescribeInstancesInput{
       Filters: []*ec2.Filter{
         {Name: aws.String("instance-state-name"), Values: []*string{aws.String("running")}},
         {Name: aws.String("tag:" + tagParts[0]), Values: []*string{aws.String(tagParts[1])}},
       },
     })
-    return *ec2.PublicDnsName, ec2, err
+    return *ec2_.PublicDnsName, ec2_, err
   }
 
   return "", nil, errors.New("Unable locate suitable EC2 instance.")

@@ -50,6 +50,15 @@ Other options to come.
 
 
 
+### AWS Config ###
+
+ash relies on [aws-sdk-go](https://github.com/aws/aws-sdk-go) which
+reads auth credentials from certain places (i.e. `~/.aws/credentials`)
+and requires `AWS_REGION` to be exported. ash otherwise defaults to
+`AWS_REGION=us-east-1`.
+
+
+
 ### SSH Config ###
 
 ash combined with ssh config settings can make for an optimally
