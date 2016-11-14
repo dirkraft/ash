@@ -33,6 +33,7 @@ publish-dev: all
 	#scripts/publish-dev.sh dist/acp.linux.amd64
 	scripts/publish-dev.sh dist/ash.windows.amd64
 	#scripts/publish-dev.sh dist/acp.windows.amd64
+	scripts/update-dev-tag.sh
 
 clean:
 	rm -rf dist/
