@@ -8,6 +8,7 @@ import (
   "errors"
   "net"
   "github.com/aws/aws-sdk-go/service/ec2"
+  "os/user"
 )
 
 
@@ -52,11 +53,7 @@ func resolveHost(at, explicitHost, instanceId, group, tag string) (string, *ec2.
     if err != nil {
       return "", nil, err
     }
-    if *ec2_.PublicDnsName != "" {
-      return *ec2_.PublicDnsName, ec2_, err
-    }
-    dbgf("No PublicDnsName available. Falling back to PrivateDnsName.")
-    return *ec2_.PrivateDnsName, ec2_, err
+    return firstAddress(ec2_), ec2_, err
   }
 
   if group != "" {
@@ -67,7 +64,7 @@ func resolveHost(at, explicitHost, instanceId, group, tag string) (string, *ec2.
         {Name: aws.String("tag:aws:autoscaling:groupName"), Values: []*string{aws.String(group)}},
       },
     })
-    return *ec2_.PublicDnsName, ec2_, err
+    return firstAddress(ec2_), ec2_, err
   }
 
   if tag != "" {
@@ -79,10 +76,23 @@ func resolveHost(at, explicitHost, instanceId, group, tag string) (string, *ec2.
         {Name: aws.String("tag:" + tagParts[0]), Values: []*string{aws.String(tagParts[1])}},
       },
     })
-    return *ec2_.PublicDnsName, ec2_, err
+    return firstAddress(ec2_), ec2_, err
   }
 
   return "", nil, errors.New("Unable locate suitable EC2 instance.")
+}
+
+func firstAddress(ec2_ *ec2.Instance) string {
+  if *ec2_.PublicDnsName != "" {
+    dbgf("Using PublicDnsName.")
+    return *ec2_.PublicDnsName
+  }
+  if *ec2_.PublicIpAddress != "" {
+    dbgf("Using PublicIpAddress.")
+    return *ec2_.PublicIpAddress
+  }
+  dbgf("Using PrivateDnsName.")
+  return *ec2_.PrivateDnsName
 }
 
 func resolveSshConfig(configFilePath string) (*SshConfig, error) {
@@ -91,7 +101,13 @@ func resolveSshConfig(configFilePath string) (*SshConfig, error) {
   if configFilePath != "" {
     paths = []string{configFilePath}
   } else {
-    paths = []string{os.Getenv("HOME") + "/.ssh/config", "/etc/ssh/ssh_config"}
+    var u, err = user.Current()
+    if err != nil {
+      return nil, err
+    }
+    // Should work for Windows and Unix
+    windowsCompatHomeDir := strings.Replace(u.HomeDir, "\\", "/", -1)
+    paths = []string{windowsCompatHomeDir + "/.ssh/config", "/etc/ssh/ssh_config"}
   }
 
   return ParseSshConfig(paths, true)

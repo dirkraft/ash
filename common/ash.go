@@ -1,7 +1,7 @@
 package common
 
 import (
-  "github.com/codegangsta/cli"
+  "github.com/urfave/cli"
   "os"
   "os/exec"
   "strings"
@@ -49,6 +49,8 @@ func cliRun(c *cli.Context) error {
   if err != nil {
     return err
   }
+
+  inff("AWS_REGION=%s", *ec2Svc.Config.Region)
 
   dbgf("Resolving hosts first. We may need EC2 info to infer other ssh params.")
   host, ec2, err := resolveHost(at, c.String("host"), c.String("instance"), c.String("group"), c.String("tag"))

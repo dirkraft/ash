@@ -5,6 +5,7 @@ import (
   "github.com/aws/aws-sdk-go/aws/session"
   "github.com/aws/aws-sdk-go/aws"
   "os"
+  "errors"
 )
 
 var ec2Svc = ec2.New(session.New(), &aws.Config{
@@ -16,9 +17,15 @@ func findEc2(params *ec2.DescribeInstancesInput) (*ec2.Instance, error) {
   if err != nil {
     return nil, err
   }
+  if len(resp.Reservations) == 0 {
+    return nil, errors.New("Could not find any matching EC2 instances.")
+  }
+  if len(resp.Reservations[0].Instances) == 0 {
+    return nil, errors.New("Could not find any matching EC2 instances.")
+  }
   ec2_ := resp.Reservations[0].Instances[0]
   inff("Located EC2: id %s, dns %s, launch %s", *ec2_.InstanceId,
-    firstString(*ec2_.PublicDnsName, *ec2_.PrivateDnsName), *ec2_.LaunchTime)
+    firstString(*ec2_.PublicDnsName, *ec2_.PublicIpAddress, *ec2_.PrivateDnsName), *ec2_.LaunchTime)
   return ec2_, nil
 }
 
