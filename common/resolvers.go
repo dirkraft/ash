@@ -64,6 +64,9 @@ func resolveHost(at, explicitHost, instanceId, group, tag string) (string, *ec2.
         {Name: aws.String("tag:aws:autoscaling:groupName"), Values: []*string{aws.String(group)}},
       },
     })
+    if err != nil {
+      return "", nil, err
+    }
     return firstAddress(ec2_), ec2_, err
   }
 
@@ -76,6 +79,9 @@ func resolveHost(at, explicitHost, instanceId, group, tag string) (string, *ec2.
         {Name: aws.String("tag:" + tagParts[0]), Values: []*string{aws.String(tagParts[1])}},
       },
     })
+    if err != nil {
+      return "", nil, err
+    }
     return firstAddress(ec2_), ec2_, err
   }
 
