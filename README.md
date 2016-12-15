@@ -71,9 +71,9 @@ with the `-i/--identity` option.
         IdentityFile path/to/privatekey.pem
 
 Ash uses DNS names instead of IP addresses which enables ssh config host
-pattern options such as this. SSH config is preferred over *inferenced
-parameters* (like guessing the user based on AMI) whenever the local
-ssh config has relevant configuration. 
+pattern options such as this. Ash will prefer SSH config over any values
+that ash generates whenever the local ssh config has relevant
+configuration. 
 
 
 
