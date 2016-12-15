@@ -160,8 +160,7 @@ func Run() {
     cli.BoolFlag{
       Name: "private, p",
       EnvVar: "ASH_PRIVATE_IP",
-      Usage: "When resolving host, prefer AWS private IPs. Useful when working from networks peered with AWS VPCs " +
-          "where public addresses may be bound but unreachable over the public internet.",
+      Usage: "When resolving host, use AWS private DNS name.",
     },
     cli.StringFlag{
       Name: "user, u",
