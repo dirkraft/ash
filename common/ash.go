@@ -53,7 +53,7 @@ func cliRun(c *cli.Context) error {
   inff("AWS_REGION=%s", *ec2Svc.Config.Region)
 
   dbgf("Resolving hosts first. We may need EC2 info to infer other ssh params.")
-  host, ec2, err := resolveHost(at, c.String("host"), c.String("instance"), c.String("group"), c.String("tag"))
+  host, ec2, err := resolveHost(at, c.String("host"), c.String("instance"), c.String("group"), c.String("tag"), c.Bool("private"))
   if err != nil {
     return err
   }
@@ -157,6 +157,12 @@ func Run() {
       Value: "",
       Usage: "ssh by EC2 tag",
     },
+    cli.BoolFlag{
+      Name: "private, p",
+      EnvVar: "ASH_PRIVATE_IP",
+      Usage: "When resolving host, prefer AWS private IPs. Useful when working from networks peered with AWS VPCs " +
+          "where public addresses may be bound but unreachable over the public internet.",
+    },
     cli.StringFlag{
       Name: "user, u",
       EnvVar: "ASH_USER",
@@ -172,7 +178,7 @@ func Run() {
     cli.BoolFlag{
       Name: "kms, k",
       EnvVar: "ASH_IDENTITY",
-      Usage: "ssh identified by a private key from KMS",
+      Usage: "NOT IMPLEMENTED ssh identified by a private key from KMS",
     },
     cli.BoolFlag{
       Name: "Agent, A",
@@ -197,7 +203,7 @@ func Run() {
       Usage: "print the version",
     },
     // Re-instate long help flag.
-    cli.BoolFlag {
+    cli.BoolFlag{
       Name: "help",
       Usage: "show help",
     },

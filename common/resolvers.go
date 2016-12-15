@@ -13,7 +13,7 @@ import (
 
 
 // TODO return lazily initialized *ec2.Instance search. We may not actually need it.
-func resolveHost(at, explicitHost, instanceId, group, tag string) (string, *ec2.Instance, error) {
+func resolveHost(at, explicitHost, instanceId, group, tag string, private bool) (string, *ec2.Instance, error) {
 
   if at != "" || explicitHost != "" {
     if at != "" {
@@ -53,7 +53,7 @@ func resolveHost(at, explicitHost, instanceId, group, tag string) (string, *ec2.
     if err != nil {
       return "", nil, err
     }
-    return firstAddress(ec2_), ec2_, err
+    return firstAddress(ec2_, private), ec2_, err
   }
 
   if group != "" {
@@ -67,7 +67,7 @@ func resolveHost(at, explicitHost, instanceId, group, tag string) (string, *ec2.
     if err != nil {
       return "", nil, err
     }
-    return firstAddress(ec2_), ec2_, err
+    return firstAddress(ec2_, private), ec2_, err
   }
 
   if tag != "" {
@@ -82,23 +82,26 @@ func resolveHost(at, explicitHost, instanceId, group, tag string) (string, *ec2.
     if err != nil {
       return "", nil, err
     }
-    return firstAddress(ec2_), ec2_, err
+    return firstAddress(ec2_, private), ec2_, err
   }
 
   return "", nil, errors.New("Unable locate suitable EC2 instance.")
 }
 
-func firstAddress(ec2_ *ec2.Instance) string {
-  if *ec2_.PublicDnsName != "" {
+func firstAddress(ec2_ *ec2.Instance, private bool) string {
+  if private && *ec2_.PrivateDnsName != "" {
+    dbgf("Using PrivateDnsName.")
+    return *ec2_.PrivateDnsName
+  } else if *ec2_.PublicDnsName != "" {
     dbgf("Using PublicDnsName.")
     return *ec2_.PublicDnsName
-  }
-  if *ec2_.PublicIpAddress != "" {
+  } else if *ec2_.PublicIpAddress != "" {
     dbgf("Using PublicIpAddress.")
     return *ec2_.PublicIpAddress
+  } else {
+    dbgf("Using PrivateDnsName.")
+    return *ec2_.PrivateDnsName
   }
-  dbgf("Using PrivateDnsName.")
-  return *ec2_.PrivateDnsName
 }
 
 func resolveSshConfig(configFilePath string) (*SshConfig, error) {
