@@ -1,11 +1,6 @@
-.PHONY: develop build all publish-dev clean
+.PHONY: develop all publish-dev clean
 
 all: dist/ash.darwin.amd64 dist/ash.linux.amd64 dist/ash.windows.amd64.exe
-
-build:
-	mkdir -p dist/
-	go build -o dist/ash ash/main.go
-	go build -o dist/acp acp/main.go
 
 dist/ash.darwin.amd64:
 	mkdir -p dist/
