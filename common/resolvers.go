@@ -163,7 +163,7 @@ func resolveUser(at, explicitUser, resolvedHost string, instance *ec2.Instance, 
   }
 
   if explicitUser != "" {
-    inff("Authenticating based on %s as user: %s", *ami.ImageId, "ec2-user")
+    inff("Authenticating based on %s as user: %s", *ami.ImageId, explicitUser)
   }
   return explicitUser, nil
 }
