@@ -25,7 +25,7 @@ func findEc2(params *ec2.DescribeInstancesInput) (*ec2.Instance, error) {
   }
   ec2_ := resp.Reservations[0].Instances[0]
   inff("Located EC2: id %s, dns %s, launch %s", *ec2_.InstanceId,
-    firstString(*ec2_.PublicDnsName, *ec2_.PublicIpAddress, *ec2_.PrivateDnsName), *ec2_.LaunchTime)
+    firstString(*ec2_.PublicDnsName, /* *ec2_.PublicIpAddress,*/ *ec2_.PrivateDnsName), *ec2_.LaunchTime)
   return ec2_, nil
 }
 

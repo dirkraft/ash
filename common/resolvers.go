@@ -95,9 +95,10 @@ func firstAddress(ec2_ *ec2.Instance, private bool) string {
   } else if *ec2_.PublicDnsName != "" {
     dbgf("Using PublicDnsName.")
     return *ec2_.PublicDnsName
-  } else if *ec2_.PublicIpAddress != "" {
-    dbgf("Using PublicIpAddress.")
-    return *ec2_.PublicIpAddress
+  // TODO This one is problematic because it is omitted from raw JSON when the instance has none
+  //} else if *ec2_.PublicIpAddress != "" {
+  //  dbgf("Using PublicIpAddress.")
+  //  return *ec2_.PublicIpAddress
   } else {
     dbgf("Using PrivateDnsName.")
     return *ec2_.PrivateDnsName
