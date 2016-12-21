@@ -28,6 +28,10 @@ https://golang.org/doc/install/source#environment
 
 ### Examples ###
 
+SSH to instance with **Name=devbox**. Name is a **-t**ag.
+
+  ash -t Name=devbox
+
 SSH to a running instance in auto-scaling **-g**roup `prod/webapp1`
 as **-u**ser `ubuntu` using all available keys matching
 `~/.ssh/{id_rsa,*.pem}` with the ssh**-A**gent.
