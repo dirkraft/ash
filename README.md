@@ -34,7 +34,7 @@ SSH to instance with **Name=devbox**. Name is a **-t**ag.
 
 SSH to a running instance in auto-scaling **-g**roup `prod/webapp1`
 as **-u**ser `ubuntu` using all available keys matching
-`~/.ssh/{id_rsa,*.pem}` with the ssh**-A**gent.
+`~/.ssh/{id_rsa,*.pem}` with the ssh **-A**gent.
 
     ash -g prod/webapp1 -u ubuntu -A
 
@@ -65,7 +65,7 @@ and requires `AWS_REGION` to be exported. ash otherwise defaults to
 
 ### SSH Config ###
 
-ash combined with ssh config settings can make for an optimally
+ash combined with ssh config settings can make for a
 convenient EC2 SSH experience. Say you use the same master key for
 all EC2 instances. In your `~/.ssh/config` this will use that
 IdentityFile for all EC2 connections, unless you specify one explicitly
