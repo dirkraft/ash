@@ -17,10 +17,7 @@ func findEc2(params *ec2.DescribeInstancesInput) (*ec2.Instance, error) {
   if err != nil {
     return nil, err
   }
-  if len(resp.Reservations) == 0 {
-    return nil, errors.New("Could not find any matching EC2 instances.")
-  }
-  if len(resp.Reservations[0].Instances) == 0 {
+  if len(resp.Reservations) == 0 || len(resp.Reservations[0].Instances) == 0 {
     return nil, errors.New("Could not find any matching EC2 instances.")
   }
   ec2_ := resp.Reservations[0].Instances[0]

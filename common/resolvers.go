@@ -35,11 +35,16 @@ func resolveHost(at, explicitHost, instanceId, group, tag string, private bool) 
       }
     }
 
-    dbgf("Finding EC2 instance by ip-address=%s", ipAddr)
+    ipAttr := "ip-address"
+    if private {
+      ipAttr = "private-ip-address"
+    }
+
+    dbgf("Finding EC2 instance by %s=%s", ipAttr, ipAddr)
     ec2_, err := findEc2(&ec2.DescribeInstancesInput{
       Filters: []*ec2.Filter{
         {Name: aws.String("instance-state-name"), Values: []*string{aws.String("running")}},
-        {Name: aws.String("ip-address"), Values: []*string{aws.String(ipAddr.String())}},
+        {Name: aws.String(ipAttr), Values: []*string{aws.String(ipAddr.String())}},
       },
     })
     return explicitHost, ec2_, err
