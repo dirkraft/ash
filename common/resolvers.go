@@ -159,6 +159,8 @@ func resolveUser(at, explicitUser, resolvedHost string, instance *ec2.Instance, 
   }
 
   switch {
+  case ami == nil:
+    inff("Could not find %s. Can't guess user.", *instance.ImageId)
   case strings.HasPrefix(*ami.Name, "amzn-"):
     explicitUser = "ec2-user"
   case strings.HasPrefix(*ami.Name, "ubuntu/"):

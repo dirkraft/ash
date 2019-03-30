@@ -32,6 +32,10 @@ func findAmi(params *ec2.DescribeImagesInput) (*ec2.Image, error) {
     return nil, err
   }
 
+  if len(resp.Images) == 0 {
+    return nil, nil
+  }
+
   ami := resp.Images[0]
   dbgf("Located AMI: id %s, name %s", *ami.ImageId, *ami.Name)
   return ami, nil
